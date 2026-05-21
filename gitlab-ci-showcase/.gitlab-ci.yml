@@ -1,0 +1,79 @@
+# ==========================================
+# GitLab CI/CD Pipeline for React-Vite App
+# ==========================================
+
+# Use the official Node LTS alpine image for ultra-fast execution
+image: node:20-alpine
+
+# Define cached paths to speed up pipeline executions
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm/
+    - node_modules/
+
+# Define pipeline stages in execution order
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+# Global before_script to configure npm cache and install dependencies
+before_script:
+  - npm ci --cache .npm --prefer-offline
+
+# ==========================================
+# 1. Lint Stage
+# ==========================================
+lint-job:
+  stage: lint
+  script:
+    - npm run lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ==========================================
+# 2. Test Stage
+# ==========================================
+test-job:
+  stage: test
+  script:
+    - npm run test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ==========================================
+# 3. Build Stage
+# ==========================================
+build-job:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ==========================================
+# 4. Deploy Stage (GitLab Pages)
+# ==========================================
+pages:
+  stage: deploy
+  script:
+    # Rename Vite's output 'dist' folder to 'public' for GitLab Pages
+    - rm -rf public
+    - mv dist public
+  artifacts:
+    paths:
+      - public
+  rules:
+    # Deploy only when changes are pushed/merged to the default branch
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

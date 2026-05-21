@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Himavanth97 | Multi-Project Showcase Portfolio</title>
+  
+  <!-- Google Fonts: Outfit and JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --bg-base: 220 35% 5%;
+      --bg-surface: 220 24% 10%;
+      --bg-surface-elevated: 220 20% 16%;
+      --primary: 272 85% 60%;
+      --accent-blue: 195 85% 50%;
+      --accent-orange: 25 95% 50%;
+      
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --border-glass: 1px solid rgba(255, 255, 255, 0.08);
+      --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      --transition-smooth: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: hsl(var(--bg-base));
+      color: #e2e8f0;
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-x: hidden;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient Background Glows */
+    body::before {
+      content: '';
+      position: absolute;
+      top: -10%;
+      right: 10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, hsla(var(--primary) / 0.12) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+      filter: blur(80px);
+    }
+
+    body::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      left: 10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, hsla(var(--accent-blue) / 0.08) 0%, transparent 75%);
+      z-index: -1;
+      pointer-events: none;
+      filter: blur(90px);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3.5rem;
+      flex-grow: 1;
+      justify-content: center;
+    }
+
+    /* Header styling */
+    header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+
+    .avatar-ring {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-blue)));
+      padding: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px hsla(var(--primary) / 0.3);
+    }
+
+    .avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #090d16;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #94a3b8;
+      letter-spacing: 0.05em;
+    }
+
+    .title {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 40%, hsla(var(--accent-blue) / 0.8));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      max-width: 600px;
+      line-height: 1.6;
+    }
+
+    /* Showcase Cards Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .title {
+        font-size: 2.2rem;
+      }
+    }
+
+    .card {
+      background: rgba(15, 22, 38, 0.4);
+      backdrop-filter: blur(20px);
+      border: var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-glass);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, transparent);
+      transition: var(--transition-smooth);
+    }
+
+    /* Hover States for Cards */
+    .card-gitlab:hover {
+      border-color: hsla(var(--accent-orange) / 0.3);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 45px rgba(249, 115, 22, 0.1);
+    }
+    .card-gitlab:hover::before {
+      background: linear-gradient(90deg, #f97316, #ec4899);
+    }
+
+    .card-github:hover {
+      border-color: hsla(var(--accent-blue) / 0.3);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 45px rgba(6, 182, 212, 0.1);
+    }
+    .card-github:hover::before {
+      background: linear-gradient(90deg, #06b6d4, #a855f7);
+    }
+
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .card-platform-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .platform-gitlab {
+      color: #f97316;
+    }
+
+    .platform-github {
+      color: #06b6d4;
+    }
+
+    .card-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-desc {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Actions & Buttons inside Cards */
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: auto;
+    }
+
+    .btn {
+      padding: 0.85rem 1.5rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+    }
+
+    .btn-primary-gitlab {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2);
+    }
+    .btn-primary-gitlab:hover {
+      background: linear-gradient(135deg, #fb923c, #f97316);
+      box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary-github {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+    }
+    .btn-primary-github:hover {
+      background: linear-gradient(135deg, #22d3ee, #06b6d4);
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      font-size: 0.75rem;
+      color: #475569;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    footer a {
+      color: #64748b;
+      text-decoration: none;
+      font-family: var(--font-mono);
+      transition: var(--transition-smooth);
+    }
+    footer a:hover {
+      color: hsl(var(--accent-blue));
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="avatar-wrapper">
+        <div class="avatar-ring">
+          <div class="avatar">H</div>
+        </div>
+      </div>
+      <span class="badge">Portfolio Collection</span>
+      <h1 class="title">Dev Showcase Hub</h1>
+      <p class="subtitle">
+        Welcome to my interactive frontend & pipeline deployment dashboard collection. Explore two premium showcases pre-configured with automated CI/CD capabilities.
+      </p>
+    </header>
+
+    <!-- Grid Layout -->
+    <div class="grid">
+      
+      <!-- GitLab Pipeline Showcase -->
+      <div class="card card-gitlab">
+        <div class="card-header">
+          <div class="card-platform-badge platform-gitlab">
+            <span>🦊 GitLab CI/CD</span>
+          </div>
+          <h2 class="card-title">Pipeline Visualizer</h2>
+          <p class="card-desc">
+            An interactive simulator showcasing corporate DevOps workflows. Features animated pipeline step execution, live simulated runner terminal console streams, and command syntax inspectors.
+          </p>
+        </div>
+        
+        <div class="card-actions">
+          <a href="./gitlab-ci-showcase/" class="btn btn-primary-gitlab">
+            <span>Enter App</span>
+            <span>➔</span>
+          </a>
+          <a href="./gitlab-ci-showcase/demo.html" class="btn btn-secondary">
+            <span>Launch Standalone Demo (Offline)</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Trend Insights Analytics Dashboard -->
+      <div class="card card-github">
+        <div class="card-header">
+          <div class="card-platform-badge platform-github">
+            <span>🐙 GitHub Actions</span>
+          </div>
+          <h2 class="card-title">Trend Insights Dashboard</h2>
+          <p class="card-desc">
+            A premium analytical visualizer for emerging technologies, market volumes, and consumer sentiment. Features glowing HSL design structures, responsive SVG area charts, and custom coordinate hover tooltips.
+          </p>
+        </div>
+        
+        <div class="card-actions">
+          <a href="./trend-insights/" class="btn btn-primary-github">
+            <span>Enter App</span>
+            <span>➔</span>
+          </a>
+          <a href="./trend-insights/demo.html" class="btn btn-secondary">
+            <span>Launch Standalone Demo (Offline)</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>Authored by **Himavanth97** • Managed under automated pipelines.</p>
+    <p><a href="https://github.com/Himavanth97/Gitlab-CI-Project" target="_blank">github.com/Himavanth97/Gitlab-CI-Project</a></p>
+  </footer>
+
+</body>
+</html>

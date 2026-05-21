@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitLab CI/CD Pipeline Visualizer & Dashboard</title>
+  <!-- Google Fonts: Outfit and JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Custom CSS styled exactly like our premium React-Vite dashboard */
+    :root {
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --bg-base: 224 25% 6%;
+      --bg-surface: 223 20% 12%;
+      --bg-surface-elevated: 223 18% 18%;
+      --primary: 260 90% 66%;
+      --primary-glow: 260 90% 66% / 0.15;
+      --accent: 25 95% 53%;
+      --color-success: 142 70% 45%;
+      --color-warning: 38 92% 50%;
+      --color-error: 350 89% 60%;
+      --color-pending: 215 90% 60%;
+      --color-skipped: 215 15% 55%;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --border-glass: 1px solid rgba(255, 255, 255, 0.08);
+      --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: hsl(var(--bg-base));
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+      position: relative;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: -10%;
+      left: 20%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, hsla(var(--primary) / 0.12) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+      filter: blur(80px);
+    }
+
+    body::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      right: 10%;
+      width: 40vw;
+      height: 40vw;
+      background: radial-gradient(circle, hsla(var(--accent) / 0.08) 0%, transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+      filter: blur(80px);
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: hsl(var(--bg-base));
+    }
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--bg-surface-elevated));
+      border-radius: var(--radius-sm);
+      border: 2px solid hsl(var(--bg-base));
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsla(255, 255, 255, 0.2);
+    }
+
+    h1, h2, h3, h4 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    /* Layout */
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header-glass {
+      background: rgba(18, 22, 33, 0.65);
+      backdrop-filter: blur(16px);
+      border: var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-glass);
+      position: sticky;
+      top: 1rem;
+      z-index: 100;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      color: hsl(var(--accent));
+      animation: logo-glow 3s ease-in-out infinite alternate;
+    }
+
+    .brand-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 40%, hsla(var(--primary) / 0.8));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .repo-badge {
+      background: hsla(var(--primary) / 0.15);
+      border: 1px solid hsla(var(--primary) / 0.3);
+      color: #d8b4fe;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .branch-selector {
+      background: hsl(var(--bg-surface-elevated));
+      color: #fff;
+      border: var(--border-glass);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* Cards */
+    .card-glass {
+      background: rgba(22, 28, 45, 0.45);
+      backdrop-filter: blur(12px);
+      border: var(--border-glass);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-glass);
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-glass:hover {
+      border-color: hsla(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .metric-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .metric-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: hsla(var(--primary) / 0.1);
+      border: 1px solid hsla(var(--primary) / 0.2);
+      color: hsl(var(--primary));
+      font-size: 1.25rem;
+      transition: var(--transition-smooth);
+    }
+    .metric-card:hover .metric-icon-box {
+      background: hsl(var(--primary));
+      color: #fff;
+      box-shadow: 0 0 15px hsla(var(--primary) / 0.4);
+    }
+
+    .metric-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
+    /* Pipeline & Terminal Sections */
+    .pipeline-section {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .pipeline-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pipeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+    }
+
+    .pipeline-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .status-running {
+      background: hsla(var(--color-pending) / 0.15);
+      border: 1px solid hsla(var(--color-pending) / 0.4);
+      color: hsl(var(--color-pending));
+    }
+    .status-success {
+      background: hsla(var(--color-success) / 0.15);
+      border: 1px solid hsla(var(--color-success) / 0.4);
+      color: hsl(var(--color-success));
+    }
+    .status-failed {
+      background: hsla(var(--color-error) / 0.15);
+      border: 1px solid hsla(var(--color-error) / 0.4);
+      color: hsl(var(--color-error));
+    }
+    .status-idle {
+      background: hsla(var(--color-skipped) / 0.15);
+      border: 1px solid hsla(var(--color-skipped) / 0.4);
+      color: hsl(var(--color-skipped));
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsla(var(--primary) / 0.7) 100%);
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition-smooth);
+      box-shadow: 0 4px 14px 0 hsla(var(--primary) / 0.3);
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px 0 hsla(var(--primary) / 0.5);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pipeline-flow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      padding: 2rem 0;
+      gap: 1rem;
+      overflow-x: auto;
+    }
+
+    .pipeline-flow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 1;
+    }
+
+    .pipeline-flow.running::before {
+      background: linear-gradient(90deg, 
+        hsla(var(--color-success) / 0.2) 20%, 
+        hsla(var(--color-pending) / 0.2) 60%, 
+        rgba(255, 255, 255, 0.05) 90%
+      );
+    }
+
+    .stage-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      z-index: 2;
+      position: relative;
+      min-width: 120px;
+    }
+
+    .stage-title {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      background: #111827;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: var(--border-glass);
+    }
+
+    .job-node {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      width: 160px;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: var(--shadow-glass);
+      position: relative;
+    }
+
+    .job-node:hover, .job-node.active-selection {
+      transform: scale(1.05);
+      border-color: hsl(var(--primary));
+      background: rgba(30, 27, 75, 0.5);
+      box-shadow: 0 0 20px hsla(var(--primary) / 0.3);
+    }
+
+    .job-node.success { border-left: 4px solid hsl(var(--color-success)); }
+    .job-node.failed { border-left: 4px solid hsl(var(--color-error)); }
+    .job-node.running { border-left: 4px solid hsl(var(--color-pending)); }
+    .job-node.pending { border-left: 4px solid hsl(var(--color-skipped)); }
+
+    .job-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      flex-shrink: 0;
+    }
+
+    .success .job-status-dot {
+      border: none;
+      background-color: hsl(var(--color-success));
+      box-shadow: 0 0 8px hsl(var(--color-success));
+    }
+    .failed .job-status-dot {
+      border: none;
+      background-color: hsl(var(--color-error));
+      box-shadow: 0 0 8px hsl(var(--color-error));
+    }
+    .running .job-status-dot {
+      border: none;
+      background-color: hsl(var(--color-pending));
+      box-shadow: 0 0 8px hsl(var(--color-pending));
+      animation: pulse-glow 1.5s infinite alternate;
+    }
+
+    .job-name {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+    .job-duration {
+      font-size: 9px;
+      color: #64748b;
+    }
+
+    /* Terminal window */
+    .terminal-window {
+      background: #090d16;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      height: 380px;
+      box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      background: #111827;
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .terminal-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .terminal-title {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .terminal-logs {
+      flex-grow: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-line {
+      word-break: break-all;
+    }
+    .log-line.cmd {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+    .log-line.cmd::before {
+      content: '$ ';
+      color: #0284c7;
+    }
+    .log-line.success { color: #4ade80; }
+    .log-line.error { color: #f87171; font-weight: 600; }
+    .log-line.info { color: #a78bfa; }
+    .log-line.dim { color: #64748b; }
+
+    /* YAML Inspector */
+    .config-explorer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .config-explorer {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .code-viewer {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      height: 480px;
+    }
+
+    .code-line {
+      white-space: pre-wrap;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+    .code-line .key {
+      color: #fb7185;
+      text-decoration: underline dotted;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .code-line .val { color: #34d399; }
+    .code-line .comment { color: #64748b; font-style: italic; }
+
+    .pipeline-guide {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .guide-card-empty {
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .guide-card-active {
+      height: 100%;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid hsla(var(--primary)/0.2);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+    }
+
+    .guide-badge {
+      background: hsla(var(--primary)/0.15);
+      color: hsl(var(--primary));
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: bold;
+      font-size: 0.875rem;
+    }
+
+    /* Animation effects */
+    @keyframes logo-glow {
+      from { filter: drop-shadow(0 0 2px hsla(var(--accent) / 0.2)); }
+      to { filter: drop-shadow(0 0 8px hsla(var(--accent) / 0.6)); }
+    }
+
+    @keyframes pulse-glow {
+      from { box-shadow: 0 0 4px hsl(var(--color-pending)); }
+      to { box-shadow: 0 0 12px hsl(var(--color-pending)); }
+    }
+
+    .line-pulse {
+      position: absolute;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      background: hsl(var(--primary));
+      border-radius: 50%;
+      box-shadow: 0 0 10px hsl(var(--primary));
+      animation: travel 4s linear infinite;
+      z-index: 1;
+      pointer-events: none;
+      display: none;
+    }
+
+    .running .line-pulse {
+      display: block;
+    }
+
+    @keyframes travel {
+      0% { left: 0%; opacity: 0; }
+      5% { opacity: 1; }
+      95% { opacity: 1; }
+      100% { left: 100%; opacity: 0; }
+    }
+
+    .footer-text {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.75rem;
+      margin-top: 2rem;
+      padding-bottom: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header-glass">
+      <div class="brand-section">
+        <!-- GitLab Logo Representation -->
+        <svg class="brand-logo" width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M96.06 50.45L88.94 28.53a3.52 3.52 0 00-1.27-1.74 3.44 3.44 0 00-2.12-.55 3.47 3.47 0 00-2.12.72 3.5 3.5 0 00-1.12 1.83L72.23 60H27.77L17.69 28.79a3.52 3.52 0 00-1.13-1.83 3.47 3.47 0 00-2.12-.72 3.44 3.44 0 00-2.12.55 3.52 3.52 0 00-1.27 1.74L3.94 50.45a7.1 7.1 0 002.58 8L50 93.33l43.48-34.88a7.1 7.1 0 002.58-8z" fill="#E24329"/>
+          <path d="M50 93.33L72.23 60H27.77L50 93.33z" fill="#FC6D26"/>
+          <path d="M27.77 60H3.94a7.1 7.1 0 002.58 8L50 93.33 27.77 60z" fill="#FCA326"/>
+          <path d="M72.23 60h23.83a7.1 7.1 0 00-2.58 8L50 93.33 72.23 60z" fill="#FCA326"/>
+          <path d="M27.77 60L17.69 28.79a3.52 3.52 0 00-1.13-1.83l-12.62 33h23.83z" fill="#E24329"/>
+          <path d="M72.23 60l10.08-31.21a3.52 3.52 0 00-1.12-1.83l-12.8 33.04h3.84z" fill="#E24329"/>
+        </svg>
+        <div>
+          <h1 class="brand-title">GitLab Pipeline Visualizer</h1>
+          <p style="font-size: 10px; color: #94a3b8; font-family: monospace;">project: gitlab-ci-showcase</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="repo-badge">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: inline-block;"></span>
+          <span>pages-active</span>
+        </div>
+        <select class="branch-selector" id="branchSelect">
+          <option value="main">main</option>
+          <option value="feature/interactive-ui">feature/interactive-ui</option>
+          <option value="patch/fix-tests">patch/fix-tests</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- Metrics -->
+    <section class="metrics-grid">
+      <div class="card-glass metric-card">
+        <div class="metric-icon-box">✓</div>
+        <div class="metric-info">
+          <span class="metric-label">Pipeline Success Rate</span>
+          <span class="metric-value">98.2%</span>
+        </div>
+      </div>
+
+      <div class="card-glass metric-card">
+        <div class="metric-icon-box">⏱</div>
+        <div class="metric-info">
+          <span class="metric-label">Avg Build Duration</span>
+          <span class="metric-value">42.8s</span>
+        </div>
+      </div>
+
+      <div class="card-glass metric-card">
+        <div class="metric-icon-box" style="color: #4ade80; border-color: rgba(74, 222, 128, 0.2); background: rgba(74, 222, 128, 0.1);">⚙</div>
+        <div class="metric-info">
+          <span class="metric-label">Active Shared Runners</span>
+          <span class="metric-value">4 / 4</span>
+        </div>
+      </div>
+
+      <div class="card-glass metric-card">
+        <div class="metric-icon-box" style="color: #fca326; border-color: rgba(252, 163, 38, 0.2); background: rgba(252, 163, 38, 0.1);">☁</div>
+        <div class="metric-info">
+          <span class="metric-label">Deploy Target</span>
+          <span class="metric-value" style="font-size: 1.1rem; padding-top: 4px;">GitLab Pages</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Graph / Terminal -->
+    <section class="pipeline-section">
+      <div class="card-glass" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div class="pipeline-header">
+            <h2 style="font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+              Interactive Pipeline
+              <span class="pipeline-status-badge status-idle" id="pipelineStatus">idle</span>
+            </h2>
+            <button class="btn-primary" id="btnTrigger">
+              <span>▶ Trigger Pipeline</span>
+            </button>
+          </div>
+          <p style="color: #94a3b8; font-size: 13px; margin-bottom: 1.5rem;">
+            Observe how jobs execute sequentially down the stages. Click on any job node to inspect live standard outputs and runner allocation states.
+          </p>
+
+          <div class="pipeline-flow" id="pipelineFlow">
+            <div class="line-pulse"></div>
+
+            <!-- lint stage -->
+            <div class="stage-column">
+              <span class="stage-title">lint</span>
+              <div class="job-node idle" id="job-eslint" onclick="selectJob('eslint-check')">
+                <div class="job-status-dot"></div>
+                <div>
+                  <div class="job-name">eslint-check</div>
+                  <div class="job-duration" id="dur-eslint">duration: -</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- test stage -->
+            <div class="stage-column">
+              <span class="stage-title">test</span>
+              <div class="job-node idle" id="job-vitest" onclick="selectJob('vitest-run')">
+                <div class="job-status-dot"></div>
+                <div>
+                  <div class="job-name">vitest-run</div>
+                  <div class="job-duration" id="dur-vitest">duration: -</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- build stage -->
+            <div class="stage-column">
+              <span class="stage-title">build</span>
+              <div class="job-node idle" id="job-vite" onclick="selectJob('vite-compile')">
+                <div class="job-status-dot"></div>
+                <div>
+                  <div class="job-name">vite-compile</div>
+                  <div class="job-duration" id="dur-vite">duration: -</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- deploy stage -->
+            <div class="stage-column">
+              <span class="stage-title">deploy</span>
+              <div class="job-node idle" id="job-pages" onclick="selectJob('pages-host')">
+                <div class="job-status-dot"></div>
+                <div>
+                  <div class="job-name">pages-host</div>
+                  <div class="job-duration" id="dur-pages">duration: -</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+          <span style="font-size: 11px; font-family: var(--font-mono); background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px;">Runner OS: Linux Alpine 3.19</span>
+          <span style="font-size: 11px; font-family: var(--font-mono); background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px;">Shell: /bin/sh</span>
+        </div>
+      </div>
+
+      <!-- Terminal logs panel -->
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <div class="terminal-controls">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <div class="terminal-title" id="terminalTitle">job: eslint-check</div>
+          <div style="width: 40px;"></div>
+        </div>
+        <div class="terminal-logs" id="terminalLogs">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- YAML Explorer -->
+    <section class="card-glass" style="margin-top: 1rem;">
+      <h2 style="font-size: 1.2rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+        📄 GitLab CI/CD Configuration Explorer
+      </h2>
+      <p style="color: #94a3b8; font-size: 13px; margin-bottom: 1.5rem;">
+        Inspect the official pipeline definition that governs this repository. 
+        <span style="color: #fb7185; font-weight: 600;">Click on any highlighted keyword</span> inside the code editor to view its clinical definition and purpose.
+      </p>
+
+      <div class="config-explorer">
+        <div class="code-viewer" id="codeViewer">
+          <!-- YAML populated by JS with links -->
+        </div>
+
+        <div class="pipeline-guide" id="guideContainer">
+          <div class="guide-card-empty" id="guideEmpty">
+            <h3 style="font-size: 14px; color: #cbd5e1; margin-bottom: 6px;">Interactive Inspector</h3>
+            <p style="font-size: 12px; color: #64748b; max-width: 300px;">
+              Click on keywords like <strong>image</strong>, <strong>cache</strong>, or <strong>artifacts</strong> in the editor to load explanations here.
+            </p>
+          </div>
+          <div class="guide-card-active" id="guideActive" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+              <span class="guide-badge" id="guideTitle">image</span>
+              <span style="font-size: 11px; color: #64748b;">CI/CD keyword</span>
+            </div>
+            <p style="color: #cbd5e1; font-size: 13px; line-height: 1.6;" id="guideDesc">
+              Explanations appear here.
+            </p>
+            <div style="margin-top: 2rem; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;">
+              <h4 style="font-size: 11px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Pro Tip</h4>
+              <p style="font-size: 11px; color: #64748b; line-height: 1.4;">
+                Correct usage of keywords prevents pipeline crashes and can save you hours of waiting time by configuring fast caches and precise execution rules.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-text">
+      <p>Created to showcase GitLab CI/CD integration. Configured to build, test, and deploy seamlessly.</p>
+      <p style="margin-top: 4px; color: #475569;">© 2026 GitLab Showcase Project.</p>
+    </footer>
+  </div>
+
+  <script>
+    // Logic and configurations
+    const JOB_LOG_TEMPLATES = {
+      'eslint-check': [
+        { type: 'cmd', text: 'npm run lint' },
+        { type: 'info', text: '> gitlab-ci-showcase@1.0.0 lint' },
+        { type: 'info', text: '> eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0' },
+        { type: 'dim', text: 'Scanning codebase for syntactical and style consistency...' },
+        { type: 'dim', text: 'Analyzing 8 source files in /builds/username/gitlab-ci-showcase/src...' },
+        { type: 'dim', text: 'Checking ESLint configuration files...' },
+        { type: 'success', text: '✓ All files match current code style configuration.' },
+        { type: 'success', text: '✓ No warnings or linting violations found.' },
+        { type: 'info', text: 'Job succeeded with status code 0' }
+      ],
+      'vitest-run': [
+        { type: 'cmd', text: 'npm run test' },
+        { type: 'info', text: '> gitlab-ci-showcase@1.0.0 test' },
+        { type: 'info', text: '> vitest run' },
+        { type: 'dim', text: ' RUN  v1.6.0 /builds/username/gitlab-ci-showcase' },
+        { type: 'dim', text: ' ✓ src/App.test.jsx (1 test) 15ms' },
+        { type: 'success', text: ' Test Files  1 passed (1)' },
+        { type: 'success', text: '      Tests  1 passed (1)' },
+        { type: 'dim', text: '   Start at  ' + new Date().toLocaleTimeString() },
+        { type: 'dim', text: '   Duration  180ms' },
+        { type: 'success', text: '✓ Automated unit test suite successfully verified!' },
+        { type: 'info', text: 'Job succeeded with status code 0' }
+      ],
+      'vite-compile': [
+        { type: 'cmd', text: 'npm run build' },
+        { type: 'info', text: '> gitlab-ci-showcase@1.0.0 build' },
+        { type: 'info', text: '> vite build' },
+        { type: 'dim', text: 'vite v5.3.1 building for production...' },
+        { type: 'dim', text: 'transforming...' },
+        { type: 'dim', text: '✓ 143 modules transformed.' },
+        { type: 'dim', text: 'rendering chunks...' },
+        { type: 'info', text: 'dist/assets/index-D7h5e2A4.css   48.24 kB │ gzip: 11.45 kB' },
+        { type: 'info', text: 'dist/assets/index-C3e9d8B1.js   182.11 kB │ gzip: 56.78 kB' },
+        { type: 'success', text: '✓ built in 1.42s' },
+        { type: 'info', text: 'Uploading compilation artifacts to GitLab coordinator...' },
+        { type: 'success', text: '✓ Artifacts uploaded. Expires in 1 week.' },
+        { type: 'info', text: 'Job succeeded with status code 0' }
+      ],
+      'pages-host': [
+        { type: 'cmd', text: 'rm -rf public && mv dist public' },
+        { type: 'dim', text: 'Cleaning up deployment structures...' },
+        { type: 'dim', text: 'Extracting build compilation artifact...' },
+        { type: 'dim', text: 'Preparing directory folder structure [public/]' },
+        { type: 'info', text: 'Uploading Pages pipeline content directly to GitLab CDN...' },
+        { type: 'dim', text: 'Contacting deployment microservice...' },
+        { type: 'success', text: '✓ Environment: GitLab Pages successfully provisioned.' },
+        { type: 'success', text: '✓ URL: https://username.gitlab.io/gitlab-ci-showcase' },
+        { type: 'info', text: 'Job succeeded with status code 0' }
+      ]
+    };
+
+    const KEYWORD_DESCRIPTIONS = {
+      'image': {
+        title: 'image',
+        desc: 'Specifies the Docker image that the GitLab Runner uses to run the jobs. Here we use node:20-alpine to ensure a lightweight, secure, and fast environment with Node.js installed.'
+      },
+      'cache': {
+        title: 'cache',
+        desc: 'Used to store dependencies between jobs. Storing the node_modules and .npm folder saves downloading packages repeatedly, saving gigabytes of bandwith and accelerating execution speeds.'
+      },
+      'stages': {
+        title: 'stages',
+        desc: 'Defines the structural order of job executions. Jobs within the same stage run concurrently. If any job in a stage fails, the entire pipeline is stopped, and subsequent stages are skipped.'
+      },
+      'before_script': {
+        title: 'before_script',
+        desc: 'A set of commands that runs prior to the script in every single job. Ideal for setup steps, loading caches, and running package installers (like npm ci).'
+      },
+      'stage': {
+        title: 'stage',
+        desc: 'Associates a job with a specific stage defined globally. This controls the chronological order of this job relative to others.'
+      },
+      'script': {
+        title: 'script',
+        desc: 'The array of Shell commands executed by the GitLab Runner inside the Docker container. This is the absolute core action of any job.'
+      },
+      'artifacts': {
+        title: 'artifacts',
+        desc: 'Files or directories created by a job that are saved and passed to subsequent pipeline stages (like compiled static files) or made available to download in the GitLab UI.'
+      },
+      'rules': {
+        title: 'rules',
+        desc: 'Conditional checks that determine if a job should be added to the pipeline. In our case, we only trigger builds on the main branch to conserve runner execution minutes.'
+      }
+    };
+
+    const PIPELINE_YAML = `# ==========================================
+# GitLab CI/CD Pipeline for React-Vite App
+# ==========================================
+
+image: node:20-alpine
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm/
+    - node_modules/
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+before_script:
+  - npm ci --cache .npm --prefer-offline
+
+# ==========================================
+# 1. Lint Stage
+# ==========================================
+lint-job:
+  stage: lint
+  script:
+    - npm run lint
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ==========================================
+# 2. Test Stage
+# ==========================================
+test-job:
+  stage: test
+  script:
+    - npm run test
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ==========================================
+# 3. Build Stage
+# ==========================================
+build-job:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ==========================================
+# 4. Deploy Stage (GitLab Pages)
+# ==========================================
+pages:
+  stage: deploy
+  script:
+    - rm -rf public
+    - mv dist public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH`;
+
+    // State Variables
+    let activeJob = 'eslint-check';
+    let isPipelineRunning = false;
+    let jobStates = {
+      'eslint-check': { status: 'idle', duration: '-', domId: 'job-eslint', durId: 'dur-eslint' },
+      'vitest-run': { status: 'idle', duration: '-', domId: 'job-vitest', durId: 'dur-vitest' },
+      'vite-compile': { status: 'idle', duration: '-', domId: 'job-vite', durId: 'dur-vite' },
+      'pages-host': { status: 'idle', duration: '-', domId: 'job-pages', durId: 'dur-pages' }
+    };
+
+    // DOM Elements
+    const btnTrigger = document.getElementById('btnTrigger');
+    const pipelineStatus = document.getElementById('pipelineStatus');
+    const pipelineFlow = document.getElementById('pipelineFlow');
+    const terminalLogs = document.getElementById('terminalLogs');
+    const terminalTitle = document.getElementById('terminalTitle');
+    const codeViewer = document.getElementById('codeViewer');
+    const guideEmpty = document.getElementById('guideEmpty');
+    const guideActive = document.getElementById('guideActive');
+    const guideTitle = document.getElementById('guideTitle');
+    const guideDesc = document.getElementById('guideDesc');
+
+    // Initialize code viewer
+    function initCodeViewer() {
+      const lines = PIPELINE_YAML.split('\n');
+      let html = '';
+      lines.forEach(line => {
+        const match = line.match(/^([a-z_]+):/);
+        if (match && KEYWORD_DESCRIPTIONS[match[1]]) {
+          const keyword = match[1];
+          const rest = line.substring(keyword.length + 1);
+          html += `<div class="code-line"><span class="key" onclick="inspectKeyword('${keyword}')">${keyword}</span>:<span class="val">${rest}</span></div>`;
+        } else if (line.trim().startsWith('#')) {
+          html += `<div class="code-line comment">${line}</div>`;
+        } else {
+          html += `<div class="code-line">${line}</div>`;
+        }
+      });
+      codeViewer.innerHTML = html;
+    }
+
+    // Keyword Inspector
+    window.inspectKeyword = function(keyword) {
+      const data = KEYWORD_DESCRIPTIONS[keyword];
+      if (data) {
+        guideEmpty.style.display = 'none';
+        guideActive.style.display = 'block';
+        guideTitle.innerText = data.title;
+        guideDesc.innerText = data.desc;
+      }
+    };
+
+    // Load static logs initially
+    function showIdleLogs(jobId) {
+      terminalLogs.innerHTML = `
+        <div class="log-line dim">Job is currently idle. Click "Trigger Pipeline" to simulate a real-world GitLab Runner execution.</div>
+        <div class="log-line dim">You can select other jobs to see their execution logs once the pipeline runs.</div>
+      `;
+    }
+
+    // Select Job manually
+    window.selectJob = function(jobId) {
+      activeJob = jobId;
+      terminalTitle.innerText = `job: ${jobId}`;
+      
+      // Update highlighted node
+      document.querySelectorAll('.job-node').forEach(node => node.classList.remove('active-selection'));
+      let domKey = jobId === 'eslint-check' ? 'job-eslint' : 
+                   jobId === 'vitest-run' ? 'job-vitest' :
+                   jobId === 'vite-compile' ? 'job-vite' : 'job-pages';
+      document.getElementById(domKey).classList.add('active-selection');
+
+      const jobState = jobStates[jobId];
+      if (jobState.status === 'idle') {
+        showIdleLogs(jobId);
+      } else if (jobState.status === 'success') {
+        // Show historical logs
+        let html = '<div class="log-line dim">--- HISTORICAL RUN LOGS ---</div>';
+        JOB_LOG_TEMPLATES[jobId].forEach(line => {
+          html += `<div class="log-line ${line.type}">${line.text}</div>`;
+        });
+        terminalLogs.innerHTML = html;
+      } else if (jobState.status === 'running') {
+        // Log stream is handled by live loop
+      } else if (jobState.status === 'pending') {
+        terminalLogs.innerHTML = `<div class="log-line info">Job is currently pending runner allocation...</div>`;
+      }
+    };
+
+    // Sleep Utility
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Append standard log line helper
+    function appendLog(line) {
+      const div = document.createElement('div');
+      div.className = `log-line ${line.type}`;
+      div.innerText = line.text;
+      terminalLogs.appendChild(div);
+      terminalLogs.scrollTop = terminalLogs.scrollHeight;
+    }
+
+    // Pipeline Trigger Simulation
+    async function triggerPipeline() {
+      if (isPipelineRunning) return;
+      isPipelineRunning = true;
+      
+      btnTrigger.disabled = true;
+      btnTrigger.innerHTML = '<span>⚙ Executing Runner...</span>';
+      pipelineStatus.innerText = 'running';
+      pipelineStatus.className = 'pipeline-status-badge status-running';
+      pipelineFlow.classList.add('running');
+
+      // Reset states to pending
+      const runOrder = ['eslint-check', 'vitest-run', 'vite-compile', 'pages-host'];
+      runOrder.forEach(key => {
+        jobStates[key].status = 'pending';
+        jobStates[key].duration = '-';
+        const node = document.getElementById(jobStates[key].domId);
+        node.className = 'job-node pending';
+        document.getElementById(jobStates[key].durId).innerText = 'duration: -';
+      });
+
+      for (let i = 0; i < runOrder.length; i++) {
+        const jobId = runOrder[i];
+        selectJob(jobId);
+
+        // Update node to running
+        const jobState = jobStates[jobId];
+        jobState.status = 'running';
+        const node = document.getElementById(jobState.domId);
+        node.className = 'job-node running active-selection';
+        document.getElementById(jobState.durId).innerText = 'duration: running...';
+
+        terminalLogs.innerHTML = '';
+
+        // Start logs
+        const startupLogs = [
+          { type: 'dim', text: 'Running with gitlab-runner 16.11.0 (fe390b14)' },
+          { type: 'dim', text: '  on docker-auto-scale-runner-01a2b3c4, system ID: s_9f8d7c6b' },
+          { type: 'info', text: 'Preparing the "docker" executor...' },
+          { type: 'dim', text: 'Using Docker Executor image node:20-alpine with node ID 1...' },
+          { type: 'info', text: 'Preparing environment...' },
+          { type: 'dim', text: 'Running on alpine-3-19-x86_64 via host-runner...' },
+          { type: 'info', text: 'Retrieving compilation cache...' },
+          { type: 'success', text: 'Successfully pulled package cache from central storage!' }
+        ];
+
+        for (const log of startupLogs) {
+          appendLog(log);
+          await sleep(150);
+        }
+
+        const actionLogs = JOB_LOG_TEMPLATES[jobId];
+        for (const log of actionLogs) {
+          appendLog(log);
+          await sleep(250);
+        }
+
+        // Job completes
+        const randomDuration = (Math.random() * 8 + 3).toFixed(1) + 's';
+        jobState.status = 'success';
+        jobState.duration = randomDuration;
+        node.className = 'job-node success active-selection';
+        document.getElementById(jobState.durId).innerText = `duration: ${randomDuration}`;
+
+        await sleep(600);
+      }
+
+      // Entire pipeline finishes
+      isPipelineRunning = false;
+      btnTrigger.disabled = false;
+      btnTrigger.innerHTML = '<span>▶ Trigger Pipeline</span>';
+      pipelineStatus.innerText = 'success';
+      pipelineStatus.className = 'pipeline-status-badge status-success';
+      pipelineFlow.classList.remove('running');
+    }
+
+    // Attach events
+    btnTrigger.addEventListener('click', triggerPipeline);
+    
+    // Init loads
+    initCodeViewer();
+    showIdleLogs('eslint-check');
+    selectJob('eslint-check');
+
+  </script>
+</body>
+</html>

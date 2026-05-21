@@ -1,0 +1,101 @@
+name: Unified Multi-Project CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # -------------------------------------------------------------
+      # 1. Build and Test GitLab Showcase
+      # -------------------------------------------------------------
+      - name: Install GitLab Showcase Dependencies
+        run: |
+          cd gitlab-ci-showcase
+          npm ci
+
+      - name: Lint GitLab Showcase
+        run: |
+          cd gitlab-ci-showcase
+          npm run lint
+
+      - name: Test GitLab Showcase
+        run: |
+          cd gitlab-ci-showcase
+          npm run test
+
+      - name: Build GitLab Showcase
+        run: |
+          cd gitlab-ci-showcase
+          npm run build
+
+      # -------------------------------------------------------------
+      # 2. Build and Test Trend Insights Dashboard
+      # -------------------------------------------------------------
+      - name: Install Trend Insights Dependencies
+        run: |
+          cd trend-insights
+          npm ci
+
+      - name: Lint Trend Insights
+        run: |
+          cd trend-insights
+          npm run lint
+
+      - name: Test Trend Insights
+        run: |
+          cd trend-insights
+          npm run test
+
+      - name: Build Trend Insights
+        run: |
+          cd trend-insights
+          npm run build
+
+      # -------------------------------------------------------------
+      # 3. Assemble Unified Dist Directory
+      # -------------------------------------------------------------
+      - name: Assemble Deployment Folder
+        run: |
+          mkdir -p unified-dist/gitlab-ci-showcase
+          mkdir -p unified-dist/trend-insights
+          
+          # Copy root page
+          cp index.html unified-dist/index.html
+          cp README.md unified-dist/README.md
+          
+          # Copy GitLab Showcase compiled files & standalone demo
+          cp -r gitlab-ci-showcase/dist/* unified-dist/gitlab-ci-showcase/
+          cp gitlab-ci-showcase/demo.html unified-dist/gitlab-ci-showcase/demo.html
+          
+          # Copy Trend Insights compiled files & standalone demo
+          cp -r trend-insights/dist/* unified-dist/trend-insights/
+          cp trend-insights/demo.html unified-dist/trend-insights/demo.html
+
+      # -------------------------------------------------------------
+      # 4. Deploy to GitHub Pages
+      # -------------------------------------------------------------
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./unified-dist
